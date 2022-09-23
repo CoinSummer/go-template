@@ -74,7 +74,7 @@ func NewExprFragment(text string, opMgr *OperatorsMgr, fnMgr *FnMgr) (*ExprFragm
 func (p *ExprFragment) RawContent() string {
 	return p.Content
 }
-func ErrFMsg(format string, a ...any) error {
+func ErrFMsg(format string, a ...interface{}) error {
 	logrus.Errorf(format, a...)
 	return fmt.Errorf(format, a...)
 }
