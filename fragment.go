@@ -49,10 +49,9 @@ type ExprFragment struct {
 	FnMgr   *FnMgr
 }
 
-func NewExprFragment(text string, ctx string, opMgr *OperatorsMgr, fnMgr *FnMgr) (*ExprFragment, error) {
+func NewExprFragment(text string, opMgr *OperatorsMgr, fnMgr *FnMgr) (*ExprFragment, error) {
 	f := &ExprFragment{
 		Content: text,
-		Ctx:     ctx,
 		OpMgr:   opMgr,
 		FnMgr:   fnMgr,
 	}
@@ -146,6 +145,29 @@ func (f *ExprFragment) EvalExpr(expr ast.Expression) (interface{}, error) {
 			return nil, ErrFMsg("unknown variable: %s", name)
 		}
 		value := gjson.Get(f.Ctx, name).Value()
+		return f.Decimalize(value), nil
+	case *ast.BracketExpression:
+		leftValue, err := f.EvalExpr(expr.Left)
+		if err != nil {
+			return nil, err
+		}
+		jStr, err := json.Marshal(leftValue)
+		if err != nil {
+			return nil, ErrFMsg("failed marshal bracket left: %s err: %s", leftValue, err)
+		}
+		memberValue, err := f.EvalExpr(expr.Member)
+		if err != nil {
+			return nil, ErrFMsg("failed eval bracket member: %s err: %s", expr.Member, err)
+		}
+		var value interface{}
+		switch m := memberValue.(type) {
+		case decimal.Decimal:
+			value = gjson.Get(string(jStr), m.BigInt().String()).Value()
+		case string:
+			value = gjson.Get(string(jStr), m).Value()
+		default:
+			return nil, ErrFMsg("index must be int or string, got: %s", reflect.TypeOf(m))
+		}
 		return f.Decimalize(value), nil
 	case *ast.DotExpression:
 		leftValue, err := f.EvalExpr(expr.Left)

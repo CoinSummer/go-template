@@ -55,7 +55,7 @@ func NewOperatorsMgr() *OperatorsMgr {
 				if !ok {
 					return nil, ErrFMsg("* to NaN: %v", arg2)
 				}
-				return a.Div(b), nil
+				return a.Mul(b), nil
 			},
 		},
 	}

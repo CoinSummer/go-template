@@ -85,7 +85,7 @@ func (t *Template) ParseMaybeExpr(reader *strings.Reader, prefix string) (IFragm
 		}
 
 		if bracketCount == 0 {
-			return NewExprFragment(text.String(), t.ctx, t.engine.OperatorsMgr, t.engine.FnMgr)
+			return NewExprFragment(text.String(), t.engine.OperatorsMgr, t.engine.FnMgr)
 		} else {
 			text.WriteRune(ch)
 		}
