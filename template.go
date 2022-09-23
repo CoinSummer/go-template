@@ -10,17 +10,28 @@ import (
 )
 
 type Template struct {
-	templateText string // plain text with variables embeded
-	ctx          string // json string
-	engine       *TemplateEngine
+	templateText   string // plain text with variables embeded
+	ctx            string // json string
+	engine         *TemplateEngine
+	parsedTemplate []IFragment
 }
 
-func NewTemplate(text string, ctx string, engine *TemplateEngine) *Template {
-	return &Template{
+func NewTemplate(text string, engine *TemplateEngine) (*Template, error) {
+	if engine == nil {
+		engine = NewTemplateEngine()
+	}
+	t := &Template{
 		templateText: text,
 		engine:       engine,
-		ctx:          ctx,
+		ctx:          "",
 	}
+	// parse template to fragments
+	fragments, err := t.ParseFragments()
+	if err != nil {
+		return nil, err
+	}
+	t.parsedTemplate = fragments
+	return t, nil
 }
 
 // can't unread more than once, use preifx to represent chars to unread
@@ -66,7 +77,6 @@ func (t *Template) ParseMaybeExpr(reader *strings.Reader, prefix string) (IFragm
 			// EOF before close bracket
 			return NewPlainFragment(text.String()), nil
 		}
-
 		if ch == '{' {
 			bracketCount += 1
 		}
@@ -75,7 +85,7 @@ func (t *Template) ParseMaybeExpr(reader *strings.Reader, prefix string) (IFragm
 		}
 
 		if bracketCount == 0 {
-			return NewExprFragment(text.String(), t.ctx, t.engine.OperatorsMgr, t.engine.FnMgr), nil
+			return NewExprFragment(text.String(), t.ctx, t.engine.OperatorsMgr, t.engine.FnMgr)
 		} else {
 			text.WriteRune(ch)
 		}
@@ -116,18 +126,13 @@ func (t *Template) ParseFragments() ([]IFragment, error) {
 
 }
 
-func (t *Template) Render() (string, error) {
-
-	// parse template to fragments
-	fragments, err := t.ParseFragments()
-	if err != nil {
-		return t.templateText, err
-	}
+func (t *Template) Render(env string) (string, error) {
+	t.ctx = env
 
 	result := ""
 	// eval fragments to string
-	for _, f := range fragments {
-		res, err := f.Eval()
+	for _, f := range t.parsedTemplate {
+		res, err := f.Eval(t.ctx)
 		if err != nil {
 			logrus.Warnf("failed eval template expression: %s", f.RawContent())
 			result += fmt.Sprintf("** %s ** ", err)

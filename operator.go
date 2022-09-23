@@ -1,8 +1,6 @@
 package go_template
 
 import (
-	"reflect"
-
 	"github.com/shopspring/decimal"
 )
 
@@ -18,44 +16,44 @@ func NewOperatorsMgr() *OperatorsMgr {
 			"/": func(arg1, arg2 interface{}) (interface{}, error) {
 				a, ok := arg1.(decimal.Decimal)
 				if !ok {
-					return nil, ErrFMsg("/ with NaN: %v", a)
+					return nil, ErrFMsg("/ with NaN: %v", arg1)
 				}
 				b, ok := arg2.(decimal.Decimal)
 				if !ok {
-					return nil, ErrFMsg("/ to NaN: %v", b)
+					return nil, ErrFMsg("/ to NaN: %v", arg2)
 				}
 				return a.Div(b), nil
 			},
 			"+": func(arg1, arg2 interface{}) (interface{}, error) {
 				a, ok := arg1.(decimal.Decimal)
 				if !ok {
-					return nil, ErrFMsg("+ with NaN: %s", reflect.TypeOf(arg1).String())
+					return nil, ErrFMsg("+ with NaN: %s", arg1)
 				}
 				b, ok := arg2.(decimal.Decimal)
 				if !ok {
-					return nil, ErrFMsg("+ to NaN: %v", reflect.TypeOf(arg2).String())
+					return nil, ErrFMsg("+ to NaN: %v", arg1)
 				}
 				return a.Add(b), nil
 			},
 			"-": func(arg1, arg2 interface{}) (interface{}, error) {
 				a, ok := arg1.(decimal.Decimal)
 				if !ok {
-					return nil, ErrFMsg("- with NaN: %v", a)
+					return nil, ErrFMsg("- with NaN: %v", arg1)
 				}
 				b, ok := arg2.(decimal.Decimal)
 				if !ok {
-					return nil, ErrFMsg("- to NaN: %v", b)
+					return nil, ErrFMsg("- to NaN: %v", arg2)
 				}
 				return a.Sub(b), nil
 			},
 			"*": func(arg1, arg2 interface{}) (interface{}, error) {
 				a, ok := arg1.(decimal.Decimal)
 				if !ok {
-					return nil, ErrFMsg("* with NaN: %v", a)
+					return nil, ErrFMsg("* with NaN: %v", arg1)
 				}
 				b, ok := arg2.(decimal.Decimal)
 				if !ok {
-					return nil, ErrFMsg("* to NaN: %v", b)
+					return nil, ErrFMsg("* to NaN: %v", arg2)
 				}
 				return a.Div(b), nil
 			},

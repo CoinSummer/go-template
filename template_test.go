@@ -7,9 +7,8 @@ import (
 )
 
 func TestTemplate_Render(t *testing.T) {
-	engine := NewTemplateEngine()
-	tp := NewTemplate("xxx { round(1000000000001000000 / 10e18, 1)} yyy", "{}", engine)
-	res, err := tp.Render()
+	tp, _ := NewTemplate("xxx { round(1000000000001000000 / 10e18, 1)} yyy", nil)
+	res, err := tp.Render(`{}`)
 	if err != nil {
 		t.Error(err)
 	}
@@ -18,9 +17,8 @@ func TestTemplate_Render(t *testing.T) {
 }
 
 func TestTemplate_Render_Variable(t *testing.T) {
-	engine := NewTemplateEngine()
-	tp := NewTemplate("{$a.b + $a.b - 1} xxx", `{"a": {"b": 333}}`, engine)
-	res, err := tp.Render()
+	tp, _ := NewTemplate("{$a.b + $a.b - 1} xxx", nil)
+	res, err := tp.Render(`{"a": {"b": 333}}`)
 	if err != nil {
 		t.Error(err)
 	}

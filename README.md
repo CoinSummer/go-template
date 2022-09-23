@@ -2,7 +2,7 @@
 
 # Dependency
 ```
-github.com/CoinSummer/go-template@v0.1.0
+github.com/CoinSummer/go-template@v0.2.0
 ```
 # Features
 1. Custom operator and functions
@@ -22,9 +22,8 @@ import (
 )
 
 func main() {
-	engine := gt.NewTemplateEngine()
-	tp := gt.NewTemplate("Everyone knows {$a.b + $a.b} == { round($a.b + $a.b, 1)}", `{"a": {"b": 1}}`, engine)
-	res, err := tp.Render()
+	tp := gt.NewTemplate("Everyone knows {$a.b + $a.b} == { round($a.b + $a.b, 1)}", nil)
+	res, err := tp.Render( `{"a": {"b": 1}}`)
 	if err != nil {
 		panic(err)
 	}
@@ -57,8 +56,8 @@ func main() {
 		return a.Mod(b), nil
 	})
 
-	tp := gt.NewTemplate("100 % 3 = {100 % 3}", ``, engine)
-	res, err := tp.Render()
+	tp := gt.NewTemplate("100 % 3 = {100 % 3}", engine)
+	res, err := tp.Render(``)
 	if err != nil {
 		panic(err)
 	}

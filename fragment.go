@@ -14,7 +14,7 @@ import (
 )
 
 type IFragment interface {
-	Eval() (interface{}, error)
+	Eval(ctx string) (interface{}, error)
 	RawContent() string
 }
 
@@ -28,7 +28,7 @@ func NewPlainFragment(text string) *PlainFragment {
 	}
 }
 
-func (p *PlainFragment) Eval() (interface{}, error) {
+func (p *PlainFragment) Eval(ctx string) (interface{}, error) {
 	result := p.Content
 	result = strings.ReplaceAll(result, "{{", "{")
 	result = strings.ReplaceAll(result, "}}", "}")
@@ -43,18 +43,33 @@ func (p *PlainFragment) RawContent() string {
 
 type ExprFragment struct {
 	Content string
+	Ast     *ast.Program
 	Ctx     string
 	OpMgr   *OperatorsMgr
 	FnMgr   *FnMgr
 }
 
-func NewExprFragment(text string, ctx string, opMgr *OperatorsMgr, fnMgr *FnMgr) *ExprFragment {
-	return &ExprFragment{
+func NewExprFragment(text string, ctx string, opMgr *OperatorsMgr, fnMgr *FnMgr) (*ExprFragment, error) {
+	f := &ExprFragment{
 		Content: text,
 		Ctx:     ctx,
 		OpMgr:   opMgr,
 		FnMgr:   fnMgr,
 	}
+	p, err := astParser.ParseFile(nil, "", text, 0)
+	if err != nil {
+		return nil, ErrFMsg("failed parse expr: %s, err: %s", text, err)
+	}
+	f.Ast = p
+	// todo eval expr
+	if len(p.Body) != 1 {
+		return nil, ErrFMsg(" < only support ONE expr: %s > ", text)
+	}
+	bodyType := reflect.TypeOf(f.Ast.Body[0]).String()
+	if bodyType != "*ast.ExpressionStatement" {
+		return nil, ErrFMsg("expr not support: %s", text)
+	}
+	return f, nil
 }
 
 func (p *ExprFragment) RawContent() string {
@@ -179,27 +194,14 @@ func (f *ExprFragment) EvalExpr(expr ast.Expression) (interface{}, error) {
 }
 
 func (f *ExprFragment) EvalContent(content string) (interface{}, error) {
-	// todo eval expr
-	p, err := astParser.ParseFile(nil, "", content, 0)
+	result, err := f.EvalExpr(f.Ast.Body[0].(*ast.ExpressionStatement).Expression)
 	if err != nil {
-		return content, ErrFMsg("failed parse expr: %s, err: %s", content, err)
+		return content, ErrFMsg("< eval expr err: %s, err: %s > ", content, err)
 	} else {
-		if len(p.Body) != 1 {
-			return content, ErrFMsg(" < only support ONE expr: %s > ", content)
-		}
-		bodyType := reflect.TypeOf(p.Body[0]).String()
-		if bodyType != "*ast.ExpressionStatement" {
-			return content, ErrFMsg("expr not support: %s", content)
-		}
-		result, err := f.EvalExpr(p.Body[0].(*ast.ExpressionStatement).Expression)
-
-		if err != nil {
-			return content, ErrFMsg("< eval expr err: %s, err: %s > ", content, err)
-		} else {
-			return result, nil
-		}
+		return result, nil
 	}
 }
-func (f *ExprFragment) Eval() (interface{}, error) {
+func (f *ExprFragment) Eval(ctx string) (interface{}, error) {
+	f.Ctx = ctx
 	return f.EvalContent(f.Content)
 }
