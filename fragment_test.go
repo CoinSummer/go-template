@@ -1,7 +1,9 @@
 package go_template
 
 import (
+	"encoding/json"
 	"testing"
+	"time"
 
 	"github.com/shopspring/decimal"
 )
@@ -101,5 +103,40 @@ func TestSimpleFuncFragment(t *testing.T) {
 	}
 	if !res.(decimal.Decimal).Equal(decimal.NewFromFloat(1.1)) {
 		t.Errorf("expect %v, got %v", 1.1, res.(decimal.Decimal))
+	}
+}
+
+func TestTimezoneFuncFragment(t *testing.T) {
+	now := time.Now()
+	expectStr := now.In(time.FixedZone("x", 8*3600)).Format(time.RFC3339Nano)
+
+	env1 := map[string]time.Time{
+		"time": now,
+	}
+	env1Str, _ := json.Marshal(env1)
+
+	got, err := NewExprFragment("timezone($time,8)", NewOperatorsMgr(), NewFnMgr())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	res, err := got.Eval(string(env1Str))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !(res.(string) == expectStr) {
+		t.Errorf("expect %s, got %s", expectStr, res)
+	}
+
+	env2 := map[string]string{
+		"time": now.Format(time.RFC3339Nano),
+	}
+	env2Str, _ := json.Marshal(env2)
+	res, err = got.Eval(string(env2Str))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !(res.(string) == expectStr) {
+		t.Errorf("expect %s, got %s", expectStr, res)
 	}
 }
