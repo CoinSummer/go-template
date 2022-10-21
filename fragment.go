@@ -145,7 +145,12 @@ func (f *ExprFragment) EvalExpr(expr ast.Expression) (interface{}, error) {
 			return nil, ErrFMsg("unknown variable: %s", name)
 		}
 		value := gjson.Get(f.Ctx, name).Value()
+		//if value == nil {
+		//	logrus.Warnf("variable %s not found in env %s: ", name, f.Ctx)
+		//	return name, nil
+		//}
 		return f.Decimalize(value), nil
+
 	case *ast.BracketExpression:
 		leftValue, err := f.EvalExpr(expr.Left)
 		if err != nil {

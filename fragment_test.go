@@ -91,6 +91,21 @@ func TestArrayVariableExprFragment(t *testing.T) {
 		t.Errorf("expect %v, got %v", 1, res.(decimal.Decimal))
 	}
 }
+func TestInExistVariableExprFragment(t *testing.T) {
+	got, err := NewExprFragment("$a.c", NewOperatorsMgr(), NewFnMgr())
+	if err != nil {
+		t.Fatal(err)
+	}
+	res, err := got.Eval(`{"a": {"b": [1,2]}}`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res != nil {
+		t.Errorf("expect %v, got %v", nil, res)
+
+	}
+
+}
 
 func TestSimpleFuncFragment(t *testing.T) {
 	got, err := NewExprFragment("round(1.12,1.1)", NewOperatorsMgr(), NewFnMgr())

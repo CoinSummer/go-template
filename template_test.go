@@ -25,3 +25,14 @@ func TestTemplate_Render_Variable(t *testing.T) {
 	logrus.Info(res)
 
 }
+func TestTemplate_Render_Invalid_Variable(t *testing.T) {
+	tp, _ := NewTemplate("{$a.c} xxx", nil)
+	res, err := tp.Render(`{"a": {"b": 333}}`)
+	if err != nil {
+		t.Error(err)
+	}
+	if res != "{$a.c} xxx" {
+		t.Errorf("expect %s, got %s", "{$a.c} xxx", res)
+	}
+
+}

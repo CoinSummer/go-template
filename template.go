@@ -138,6 +138,11 @@ func (t *Template) Render(env string) (string, error) {
 			result += fmt.Sprintf("** %s ** ", err)
 			continue
 		}
+		if res == nil {
+			result += "{" + f.RawContent() + "}"
+			continue
+		}
+
 		j, err := json.Marshal(res)
 		if err != nil {
 			logrus.Warnf("failed marshal expr result: %s, err: %s", j, err)
