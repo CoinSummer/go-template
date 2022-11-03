@@ -24,6 +24,19 @@ func TestSimpleExprFragment(t *testing.T) {
 	}
 }
 
+func TestAutoCastExprFragment(t *testing.T) {
+	got, err := NewExprFragment(`"1" + "1" + 1`, NewOperatorsMgr(), NewFnMgr())
+	if err != nil {
+		t.Error(err)
+	}
+	res, err := got.Eval("")
+	if err != nil {
+		t.Error(err)
+	}
+	if !res.(decimal.Decimal).Equal(decimal.NewFromInt(3)) {
+		t.Errorf("expect %v, got %v", 3, res.(decimal.Decimal))
+	}
+}
 func TestMultipleOperatorExprFragment(t *testing.T) {
 	got, err := NewExprFragment("1 + 1 + 1", NewOperatorsMgr(), NewFnMgr())
 	if err != nil {
