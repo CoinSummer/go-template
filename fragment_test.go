@@ -2,6 +2,8 @@ package go_template
 
 import (
 	"encoding/json"
+	"fmt"
+	"strconv"
 	"testing"
 	"time"
 
@@ -92,7 +94,7 @@ func TestArrayVariableExprFragment(t *testing.T) {
 	}
 }
 func TestInExistVariableExprFragment(t *testing.T) {
-	got, err := NewExprFragment("$a.c", NewOperatorsMgr(), NewFnMgr())
+	got, err := NewExprFragment("$a.c.d", NewOperatorsMgr(), NewFnMgr())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -104,7 +106,6 @@ func TestInExistVariableExprFragment(t *testing.T) {
 		t.Errorf("expect %v, got %v", nil, res)
 
 	}
-
 }
 
 func TestSimpleFuncFragment(t *testing.T) {
@@ -125,12 +126,26 @@ func TestTimezoneFuncFragment(t *testing.T) {
 	now := time.Now()
 	expectStr := now.In(time.FixedZone("x", 8*3600)).Format(time.RFC3339Nano)
 
-	env1 := map[string]time.Time{
-		"time": now,
+	env1 := map[string]interface{}{
+		"time":   now,
+		"ts":     now.UnixMilli(),
+		"ts_str": strconv.FormatInt(now.UnixMilli(), 10),
 	}
 	env1Str, _ := json.Marshal(env1)
+	got, err := NewExprFragment("timezone($ts,8)", NewOperatorsMgr(), NewFnMgr())
+	if err != nil {
+		t.Fatal(err)
+	}
+	r, err := got.Eval(string(env1Str))
+	fmt.Println(r)
+	got, err = NewExprFragment("timezone($ts_str,8)", NewOperatorsMgr(), NewFnMgr())
+	if err != nil {
+		t.Fatal(err)
+	}
+	r, err = got.Eval(string(env1Str))
+	fmt.Println(r)
 
-	got, err := NewExprFragment("timezone($time,8)", NewOperatorsMgr(), NewFnMgr())
+	got, err = NewExprFragment("timezone($time,8)", NewOperatorsMgr(), NewFnMgr())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -139,6 +154,7 @@ func TestTimezoneFuncFragment(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	fmt.Println(res)
 	if !(res.(string) == expectStr) {
 		t.Errorf("expect %s, got %s", expectStr, res)
 	}
