@@ -3,6 +3,7 @@ package go_template
 import (
 	"encoding/json"
 	"fmt"
+	"math/big"
 	"strconv"
 	"testing"
 	"time"
@@ -10,6 +11,65 @@ import (
 	"github.com/shopspring/decimal"
 )
 
+func TestNumberLiteral(t *testing.T) {
+	got, err := NewExprFragment(`1`, NewOperatorsMgr(), NewFnMgr())
+	if err != nil {
+		t.Error(err)
+	}
+	res, err := got.Eval("")
+	if err != nil {
+		t.Error(err)
+	}
+	if !res.(decimal.Decimal).Equal(decimal.NewFromInt(1)) {
+		t.Errorf("expect %v, got %v", 1, res.(decimal.Decimal))
+	}
+}
+func TestStringDecimal(t *testing.T) {
+	got, err := NewExprFragment(`"8902239900000000000" / 1e18`, NewOperatorsMgr(), NewFnMgr())
+	if err != nil {
+		t.Error(err)
+	}
+	res, err := got.Eval("")
+	if err != nil {
+		t.Error(err)
+	}
+	if !res.(decimal.Decimal).Equal(decimal.NewFromFloat(8.9022399)) {
+		t.Errorf("expect %v, got %v", 2, res.(decimal.Decimal))
+	}
+}
+
+func TestInt(t *testing.T) {
+	got, err := NewExprFragment(`9 / 3`, NewOperatorsMgr(), NewFnMgr())
+	if err != nil {
+		t.Error(err)
+	}
+	res, err := got.Eval(``)
+	if err != nil {
+		t.Error(err)
+	}
+	if !res.(decimal.Decimal).Equal(decimal.NewFromFloat(3)) {
+		t.Errorf("expect %v, got %v", 3, res.(decimal.Decimal))
+	}
+}
+
+func TestBigInt(t *testing.T) {
+	got, err := NewExprFragment(`$value / 1e18`, NewOperatorsMgr(), NewFnMgr())
+	if err != nil {
+		t.Error(err)
+	}
+	d, _ := big.NewInt(0).SetString("8902239900000000000", 10)
+	env := map[string]interface{}{
+		"value": d,
+	}
+	s, _ := json.Marshal(env)
+	res, err := got.Eval(string(s))
+	if err != nil {
+		t.Error(err)
+	}
+	if !res.(decimal.Decimal).Equal(decimal.NewFromFloat(8.9022399)) {
+		t.Errorf("expect %v, got %v", 2, res.(decimal.Decimal))
+	}
+}
 func TestSimpleExprFragment(t *testing.T) {
 	got, err := NewExprFragment("1 + 1", NewOperatorsMgr(), NewFnMgr())
 	if err != nil {
@@ -111,13 +171,9 @@ func TestInExistVariableExprFragment(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	res, err := got.Eval(`{"a": {"b": [1,2]}}`)
-	if err != nil {
+	_, err = got.Eval(`{"a": {"b": [1,2]}}`)
+	if err == nil {
 		t.Fatal(err)
-	}
-	if res != nil {
-		t.Errorf("expect %v, got %v", nil, res)
-
 	}
 }
 

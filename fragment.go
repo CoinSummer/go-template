@@ -28,7 +28,7 @@ func NewPlainFragment(text string) *PlainFragment {
 	}
 }
 
-func (p *PlainFragment) Eval(ctx string) (interface{}, error) {
+func (p *PlainFragment) Eval(_ string) (interface{}, error) {
 	result := p.Content
 	result = strings.ReplaceAll(result, "{{", "{")
 	result = strings.ReplaceAll(result, "}}", "}")
@@ -42,7 +42,7 @@ func (p *PlainFragment) RawContent() string {
 // -------------------------------------------------------------
 
 type ExprFragment struct {
-	Content string
+	Content string // without {}
 	Ast     *ast.Program
 	Ctx     string
 	OpMgr   *OperatorsMgr
@@ -60,7 +60,6 @@ func NewExprFragment(text string, opMgr *OperatorsMgr, fnMgr *FnMgr) (*ExprFragm
 		return nil, ErrFMsg("failed parse expr: %s, err: %s", text, err)
 	}
 	f.Ast = p
-	// todo eval expr
 	if len(p.Body) != 1 {
 		return nil, ErrFMsg(" < only support ONE expr: %s > ", text)
 	}
@@ -79,6 +78,7 @@ func ErrFMsg(format string, a ...interface{}) error {
 	return fmt.Errorf(format, a...)
 }
 
+// 二元操作符
 func (f *ExprFragment) EvalBin(arg1, arg2 ast.Expression, op string) (interface{}, error) {
 	arg1Value, err := f.EvalExpr(arg1)
 	if err != nil {
@@ -142,13 +142,14 @@ func (f *ExprFragment) EvalExpr(expr ast.Expression) (interface{}, error) {
 		if strings.HasPrefix(name, "$") {
 			name = strings.TrimPrefix(name, "$")
 		} else {
-			return nil, ErrFMsg("unknown variable: %s", name)
+			// 不支持变量
+			return name, ErrFMsg("unsupported variable: %s", name)
 		}
 		value := gjson.Get(f.Ctx, name).Value()
-		//if value == nil {
-		//	logrus.Warnf("variable %s not found in env %s: ", name, f.Ctx)
-		//	return name, nil
-		//}
+		if value == nil {
+			logrus.Warnf("variable %s not found in env %s: ", name, f.Ctx)
+			return name, ErrFMsg("unknown variable: %s", name)
+		}
 		return f.Decimalize(value), nil
 
 	case *ast.BracketExpression:
@@ -184,6 +185,9 @@ func (f *ExprFragment) EvalExpr(expr ast.Expression) (interface{}, error) {
 			return nil, ErrFMsg("failed marshal dot left: %s err: %s", leftValue, err)
 		}
 		value := gjson.Get(string(jStr), expr.Identifier.Name.String()).Value()
+		if value == nil {
+			return nil, ErrFMsg("key %s not found in %s", expr.Identifier.Name.String(), string(jStr))
+		}
 		return f.Decimalize(value), nil
 	case *ast.BinaryExpression:
 		return f.EvalBin(expr.Left, expr.Right, expr.Operator.String())
@@ -194,19 +198,11 @@ func (f *ExprFragment) EvalExpr(expr ast.Expression) (interface{}, error) {
 		}
 		return f.EvalCall(funcName.Name.String(), expr.ArgumentList)
 	case *ast.NumberLiteral:
-		switch expr.Value.(type) {
-		case float32:
-			return decimal.NewFromFloat32(expr.Value.(float32)), nil
-		case float64:
-			return decimal.NewFromFloat(expr.Value.(float64)), nil
-		case int64:
-			return decimal.NewFromInt(expr.Value.(int64)), nil
-		case int32:
-			return decimal.NewFromInt32(expr.Value.(int32)), nil
-		default:
-			logrus.Warnf("unknown number literal: %v", expr.Value)
-			return decimal.NewFromInt(0), nil
+		d, err := decimal.NewFromString(fmt.Sprintf("%v", expr.Value))
+		if err != nil {
+			return nil, ErrFMsg("bad number literal %v", expr.Value)
 		}
+		return d, nil
 	case *ast.StringLiteral:
 		return expr.Value.String(), nil
 	case *ast.BooleanLiteral:

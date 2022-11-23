@@ -34,5 +34,11 @@ func TestTemplate_Render_Invalid_Variable(t *testing.T) {
 	if res != "{$a.c} xxx" {
 		t.Errorf("expect %s, got %s", "{$a.c} xxx", res)
 	}
+}
 
+func TestSyntaxError(t *testing.T) {
+	_, err := NewTemplate("{111a.c} xxx", nil)
+	if err == nil {
+		t.Error(err)
+	}
 }

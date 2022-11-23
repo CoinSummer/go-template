@@ -49,7 +49,7 @@ func (t *Template) ParsePlain(reader *strings.Reader, prefix string) (IFragment,
 		}
 		// expr next
 		if ch == '{' {
-			reader.UnreadRune()
+			_ = reader.UnreadRune()
 			return NewPlainFragment(text.String()), nil
 		} else {
 			text.WriteRune(ch)
@@ -66,7 +66,7 @@ func (t *Template) ParseMaybeExpr(reader *strings.Reader, prefix string) (IFragm
 	var ch rune
 	var err error
 	// drop {
-	reader.ReadRune()
+	_, _, _ = reader.ReadRune()
 
 	bracketCount := 1
 
@@ -103,7 +103,7 @@ func (t *Template) ParseFragments() ([]IFragment, error) {
 		if err != nil {
 			break
 		}
-		reader.UnreadRune()
+		_ = reader.UnreadRune()
 		if ch == '{' {
 			f, err := t.ParseMaybeExpr(reader, "")
 			if err != nil {
@@ -135,7 +135,8 @@ func (t *Template) Render(env string) (string, error) {
 		res, err := f.Eval(t.ctx)
 		if err != nil {
 			logrus.Warnf("failed eval template expression: %s", f.RawContent())
-			result += fmt.Sprintf("** %s ** ", err)
+			//result += fmt.Sprintf("** %s ** ", err)
+			result += "{" + f.RawContent() + "}"
 			continue
 		}
 		if res == nil {
