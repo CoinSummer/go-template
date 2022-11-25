@@ -171,6 +171,7 @@ func (f *ExprFragment) EvalExpr(expr ast.Expression) (interface{}, error) {
 		case decimal.Decimal:
 			value = gjson.Get(text, m.BigInt().String()).Value()
 		case string:
+			// escaping path from gjson
 			m = strings.ReplaceAll(m, ".", `\.`)
 			value = gjson.Get(text, m).Value()
 		default:
