@@ -166,11 +166,13 @@ func (f *ExprFragment) EvalExpr(expr ast.Expression) (interface{}, error) {
 			return nil, ErrFMsg("failed eval bracket member: %s err: %s", expr.Member, err)
 		}
 		var value interface{}
+		text := string(jStr)
 		switch m := memberValue.(type) {
 		case decimal.Decimal:
-			value = gjson.Get(string(jStr), m.BigInt().String()).Value()
+			value = gjson.Get(text, m.BigInt().String()).Value()
 		case string:
-			value = gjson.Get(string(jStr), m).Value()
+			m = strings.ReplaceAll(m, ".", `\.`)
+			value = gjson.Get(text, m).Value()
 		default:
 			return nil, ErrFMsg("index must be int or string, got: %s", reflect.TypeOf(m))
 		}
@@ -186,7 +188,7 @@ func (f *ExprFragment) EvalExpr(expr ast.Expression) (interface{}, error) {
 		}
 		value := gjson.Get(string(jStr), expr.Identifier.Name.String()).Value()
 		if value == nil {
-			return nil, ErrFMsg("key %s not found in %s", expr.Identifier.Name.String(), string(jStr))
+			return nil, ErrFMsg("text %s not found in %s", expr.Identifier.Name.String(), string(jStr))
 		}
 		return f.Decimalize(value), nil
 	case *ast.BinaryExpression:

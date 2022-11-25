@@ -178,13 +178,17 @@ func TestInExistVariableExprFragment(t *testing.T) {
 	}
 }
 func TestBracket(t *testing.T) {
-	got, err := NewExprFragment("$a['b']", NewOperatorsMgr(), NewFnMgr())
+	got, err := NewExprFragment(`$a['b.c']`, NewOperatorsMgr(), NewFnMgr())
 	if err != nil {
 		t.Fatal(err)
 	}
-	v, err := got.Eval(`{"a": {"b": [1,2]}}`)
+	v, err := got.Eval(`{"a": {"b.c": [1,2]}}`)
 	s, _ := json.Marshal(v)
 	assert.Equal(t, string(s), "[1,2]")
+
+	v, err = got.Eval(`{"a": {"c": 123}}`)
+	s, _ = json.Marshal(v)
+	assert.Equal(t, string(s), "null")
 
 }
 
