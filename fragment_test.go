@@ -3,6 +3,7 @@ package go_template
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/stretchr/testify/assert"
 	"math/big"
 	"strconv"
 	"testing"
@@ -175,6 +176,16 @@ func TestInExistVariableExprFragment(t *testing.T) {
 	if err == nil {
 		t.Fatal(err)
 	}
+}
+func TestBracket(t *testing.T) {
+	got, err := NewExprFragment("$a['b']", NewOperatorsMgr(), NewFnMgr())
+	if err != nil {
+		t.Fatal(err)
+	}
+	v, err := got.Eval(`{"a": {"b": [1,2]}}`)
+	s, _ := json.Marshal(v)
+	assert.Equal(t, string(s), "[1,2]")
+
 }
 
 func TestSimpleFuncFragment(t *testing.T) {
