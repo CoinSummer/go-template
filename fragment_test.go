@@ -2,7 +2,6 @@ package go_template
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/stretchr/testify/assert"
 	"math/big"
 	"strconv"
@@ -236,13 +235,15 @@ func TestTimezoneFuncFragment(t *testing.T) {
 		t.Fatal(err)
 	}
 	r, err := got.Eval(string(env1Str), config)
-	fmt.Println(r)
+	if r.(string) != expectStr {
+		t.Errorf("expect %s, got: %s", expectStr, r)
+	}
+
 	got, err = NewExprFragment("timezone($ts_str,8)", NewOperatorsMgr(), NewFnMgr())
 	if err != nil {
 		t.Fatal(err)
 	}
 	r, err = got.Eval(string(env1Str), config)
-	fmt.Println(r)
 
 	got, err = NewExprFragment("timezone($time,8)", NewOperatorsMgr(), NewFnMgr())
 	if err != nil {
@@ -253,7 +254,6 @@ func TestTimezoneFuncFragment(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	fmt.Println(res)
 	if !(res.(string) == expectStr) {
 		t.Errorf("expect %s, got %s", expectStr, res)
 	}
@@ -266,6 +266,35 @@ func TestTimezoneFuncFragment(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	if !(res.(string) == expectStr) {
+		t.Errorf("expect %s, got %s", expectStr, res)
+	}
+}
+func TestTimezoneFuncCustomConfig(t *testing.T) {
+	format := "2006-01-02 X 15:04:05Z07:00"
+	config := &TemplateConfig{
+		TimeOffset: 7,
+		TimeFormat: format,
+	}
+	now := time.Now()
+	expectStr := now.In(time.FixedZone("x", 8*3600)).Format(format)
+
+	env1 := map[string]interface{}{
+		"time": now,
+	}
+
+	env1Str, _ := json.Marshal(env1)
+
+	got, err := NewExprFragment(`formatTime($time,8, "2006-01-02 X 15:04:05Z07:00")`, NewOperatorsMgr(), NewFnMgr())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	res, err := got.Eval(string(env1Str), config)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	if !(res.(string) == expectStr) {
 		t.Errorf("expect %s, got %s", expectStr, res)
 	}
