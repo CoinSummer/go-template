@@ -6,18 +6,24 @@ import (
 	"github.com/stretchr/testify/assert"
 	"math/big"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/shopspring/decimal"
 )
 
+var config = &TemplateConfig{
+	TimeOffset: 0,
+	TimeFormat: strings.ReplaceAll(time.RFC3339, "T", " "),
+}
+
 func TestNumberLiteral(t *testing.T) {
 	got, err := NewExprFragment(`1`, NewOperatorsMgr(), NewFnMgr())
 	if err != nil {
 		t.Error(err)
 	}
-	res, err := got.Eval("")
+	res, err := got.Eval("", config)
 	if err != nil {
 		t.Error(err)
 	}
@@ -30,7 +36,7 @@ func TestStringDecimal(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	res, err := got.Eval("")
+	res, err := got.Eval("", config)
 	if err != nil {
 		t.Error(err)
 	}
@@ -44,7 +50,7 @@ func TestInt(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	res, err := got.Eval(``)
+	res, err := got.Eval(``, config)
 	if err != nil {
 		t.Error(err)
 	}
@@ -63,7 +69,7 @@ func TestBigInt(t *testing.T) {
 		"value": d,
 	}
 	s, _ := json.Marshal(env)
-	res, err := got.Eval(string(s))
+	res, err := got.Eval(string(s), config)
 	if err != nil {
 		t.Error(err)
 	}
@@ -76,7 +82,7 @@ func TestSimpleExprFragment(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	res, err := got.Eval("")
+	res, err := got.Eval("", config)
 	if err != nil {
 		t.Error(err)
 	}
@@ -90,7 +96,7 @@ func TestAutoCastExprFragment(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	res, err := got.Eval("")
+	res, err := got.Eval("", config)
 	if err != nil {
 		t.Error(err)
 	}
@@ -103,7 +109,7 @@ func TestMultipleOperatorExprFragment(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	res, err := got.Eval("")
+	res, err := got.Eval("", config)
 	if err != nil {
 		t.Error(err)
 	}
@@ -117,7 +123,7 @@ func TestParOperatorExprFragment(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	res, err := got.Eval("")
+	res, err := got.Eval("", config)
 	if err != nil {
 		t.Error(err)
 	}
@@ -131,7 +137,7 @@ func TestSimpleVariableExprFragment(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	res, err := got.Eval(`{"a": 3}`)
+	res, err := got.Eval(`{"a": 3}`, config)
 	if err != nil {
 		t.Error(err)
 	}
@@ -145,7 +151,7 @@ func TestNestedVariableExprFragment(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	res, err := got.Eval(`{"a": {"b": {"c":3}}}`)
+	res, err := got.Eval(`{"a": {"b": {"c":3}}}`, config)
 	if err != nil {
 		t.Error(err)
 	}
@@ -159,7 +165,7 @@ func TestArrayVariableExprFragment(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	res, err := got.Eval(`{"a": {"b": [1,2]}}`)
+	res, err := got.Eval(`{"a": {"b": [1,2]}}`, config)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -172,7 +178,7 @@ func TestInExistVariableExprFragment(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = got.Eval(`{"a": {"b": [1,2]}}`)
+	_, err = got.Eval(`{"a": {"b": [1,2]}}`, config)
 	if err == nil {
 		t.Fatal(err)
 	}
@@ -182,14 +188,23 @@ func TestBracket(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	v, err := got.Eval(`{"a": {"b.c": [1,2]}}`)
+	v, err := got.Eval(`{"a": {"b.c": [1,2]}}`, config)
 	s, _ := json.Marshal(v)
 	assert.Equal(t, string(s), "[1,2]")
 
-	v, err = got.Eval(`{"a": {"c": 123}}`)
+	v, err = got.Eval(`{"a": {"c": 123}}`, config)
 	s, _ = json.Marshal(v)
 	assert.Equal(t, string(s), "null")
 
+}
+func TestDotPathBracket(t *testing.T) {
+	got, err := NewExprFragment(`$a['b/...c']`, NewOperatorsMgr(), NewFnMgr())
+	if err != nil {
+		t.Fatal(err)
+	}
+	v, err := got.Eval(`{"a": {"b/...c": [1,2]}}`, config)
+	s, _ := json.Marshal(v)
+	assert.Equal(t, string(s), "[1,2]")
 }
 
 func TestSimpleFuncFragment(t *testing.T) {
@@ -197,7 +212,7 @@ func TestSimpleFuncFragment(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	res, err := got.Eval(``)
+	res, err := got.Eval(``, config)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -208,7 +223,7 @@ func TestSimpleFuncFragment(t *testing.T) {
 
 func TestTimezoneFuncFragment(t *testing.T) {
 	now := time.Now()
-	expectStr := now.In(time.FixedZone("x", 8*3600)).Format(time.RFC3339Nano)
+	expectStr := strings.ReplaceAll(now.In(time.FixedZone("x", 8*3600)).Format(time.RFC3339), "T", " ")
 
 	env1 := map[string]interface{}{
 		"time":   now,
@@ -220,13 +235,13 @@ func TestTimezoneFuncFragment(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	r, err := got.Eval(string(env1Str))
+	r, err := got.Eval(string(env1Str), config)
 	fmt.Println(r)
 	got, err = NewExprFragment("timezone($ts_str,8)", NewOperatorsMgr(), NewFnMgr())
 	if err != nil {
 		t.Fatal(err)
 	}
-	r, err = got.Eval(string(env1Str))
+	r, err = got.Eval(string(env1Str), config)
 	fmt.Println(r)
 
 	got, err = NewExprFragment("timezone($time,8)", NewOperatorsMgr(), NewFnMgr())
@@ -234,7 +249,7 @@ func TestTimezoneFuncFragment(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	res, err := got.Eval(string(env1Str))
+	res, err := got.Eval(string(env1Str), config)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -247,7 +262,7 @@ func TestTimezoneFuncFragment(t *testing.T) {
 		"time": now.Format(time.RFC3339Nano),
 	}
 	env2Str, _ := json.Marshal(env2)
-	res, err = got.Eval(string(env2Str))
+	res, err = got.Eval(string(env2Str), config)
 	if err != nil {
 		t.Fatal(err)
 	}

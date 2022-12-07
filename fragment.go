@@ -14,7 +14,7 @@ import (
 )
 
 type IFragment interface {
-	Eval(ctx string) (interface{}, error)
+	Eval(ctx string, config *TemplateConfig) (interface{}, error)
 	RawContent() string
 }
 
@@ -28,7 +28,7 @@ func NewPlainFragment(text string) *PlainFragment {
 	}
 }
 
-func (p *PlainFragment) Eval(_ string) (interface{}, error) {
+func (p *PlainFragment) Eval(_ string, _ *TemplateConfig) (interface{}, error) {
 	result := p.Content
 	result = strings.ReplaceAll(result, "{{", "{")
 	result = strings.ReplaceAll(result, "}}", "}")
@@ -79,12 +79,12 @@ func ErrFMsg(format string, a ...interface{}) error {
 }
 
 // 二元操作符
-func (f *ExprFragment) EvalBin(arg1, arg2 ast.Expression, op string) (interface{}, error) {
-	arg1Value, err := f.EvalExpr(arg1)
+func (f *ExprFragment) EvalBin(arg1, arg2 ast.Expression, op string, config *TemplateConfig) (interface{}, error) {
+	arg1Value, err := f.EvalExpr(arg1, config)
 	if err != nil {
 		return arg1Value, err
 	}
-	arg2Value, err := f.EvalExpr(arg2)
+	arg2Value, err := f.EvalExpr(arg2, config)
 	if err != nil {
 		return arg2Value, err
 	}
@@ -100,20 +100,20 @@ func (f *ExprFragment) EvalBin(arg1, arg2 ast.Expression, op string) (interface{
 	return result, nil
 }
 
-func (f *ExprFragment) EvalCall(funcName string, args []ast.Expression) (interface{}, error) {
+func (f *ExprFragment) EvalCall(funcName string, args []ast.Expression, config *TemplateConfig) (interface{}, error) {
 	fn := f.FnMgr.GetFunc(funcName)
 	if fn == nil {
 		return nil, ErrFMsg("func not found: %s", funcName)
 	}
 	var argsValue []interface{}
 	for _, arg := range args {
-		argValue, err := f.EvalExpr(arg)
+		argValue, err := f.EvalExpr(arg, config)
 		if err != nil {
 			return nil, ErrFMsg("failed eval function args: %s, err: %s", funcName, err)
 		}
 		argsValue = append(argsValue, argValue)
 	}
-	result, err := fn(argsValue)
+	result, err := fn(config, argsValue)
 	if err != nil {
 		return nil, ErrFMsg("failed eval function: %s, err: %s", funcName, err)
 	}
@@ -135,7 +135,7 @@ func (f *ExprFragment) Decimalize(value interface{}) interface{} {
 	}
 
 }
-func (f *ExprFragment) EvalExpr(expr ast.Expression) (interface{}, error) {
+func (f *ExprFragment) EvalExpr(expr ast.Expression, config *TemplateConfig) (interface{}, error) {
 	switch expr := expr.(type) {
 	case *ast.Identifier:
 		name := expr.Name.String()
@@ -153,7 +153,7 @@ func (f *ExprFragment) EvalExpr(expr ast.Expression) (interface{}, error) {
 		return f.Decimalize(value), nil
 
 	case *ast.BracketExpression:
-		leftValue, err := f.EvalExpr(expr.Left)
+		leftValue, err := f.EvalExpr(expr.Left, config)
 		if err != nil {
 			return nil, err
 		}
@@ -161,7 +161,7 @@ func (f *ExprFragment) EvalExpr(expr ast.Expression) (interface{}, error) {
 		if err != nil {
 			return nil, ErrFMsg("failed marshal bracket left: %s err: %s", leftValue, err)
 		}
-		memberValue, err := f.EvalExpr(expr.Member)
+		memberValue, err := f.EvalExpr(expr.Member, config)
 		if err != nil {
 			return nil, ErrFMsg("failed eval bracket member: %s err: %s", expr.Member, err)
 		}
@@ -179,7 +179,7 @@ func (f *ExprFragment) EvalExpr(expr ast.Expression) (interface{}, error) {
 		}
 		return f.Decimalize(value), nil
 	case *ast.DotExpression:
-		leftValue, err := f.EvalExpr(expr.Left)
+		leftValue, err := f.EvalExpr(expr.Left, config)
 		if err != nil {
 			return nil, err
 		}
@@ -193,13 +193,13 @@ func (f *ExprFragment) EvalExpr(expr ast.Expression) (interface{}, error) {
 		}
 		return f.Decimalize(value), nil
 	case *ast.BinaryExpression:
-		return f.EvalBin(expr.Left, expr.Right, expr.Operator.String())
+		return f.EvalBin(expr.Left, expr.Right, expr.Operator.String(), config)
 	case *ast.CallExpression:
 		funcName, ok := expr.Callee.(*ast.Identifier)
 		if !ok {
 			return "", ErrFMsg("<function not found: %s>", funcName.Name.String())
 		}
-		return f.EvalCall(funcName.Name.String(), expr.ArgumentList)
+		return f.EvalCall(funcName.Name.String(), expr.ArgumentList, config)
 	case *ast.NumberLiteral:
 		d, err := decimal.NewFromString(fmt.Sprintf("%v", expr.Value))
 		if err != nil {
@@ -219,15 +219,15 @@ func (f *ExprFragment) EvalExpr(expr ast.Expression) (interface{}, error) {
 	}
 }
 
-func (f *ExprFragment) EvalContent(content string) (interface{}, error) {
-	result, err := f.EvalExpr(f.Ast.Body[0].(*ast.ExpressionStatement).Expression)
+func (f *ExprFragment) EvalContent(content string, config *TemplateConfig) (interface{}, error) {
+	result, err := f.EvalExpr(f.Ast.Body[0].(*ast.ExpressionStatement).Expression, config)
 	if err != nil {
 		return content, ErrFMsg("< eval expr err: %s, err: %s > ", content, err)
 	} else {
 		return result, nil
 	}
 }
-func (f *ExprFragment) Eval(ctx string) (interface{}, error) {
+func (f *ExprFragment) Eval(ctx string, config *TemplateConfig) (interface{}, error) {
 	f.Ctx = ctx
-	return f.EvalContent(f.Content)
+	return f.EvalContent(f.Content, config)
 }

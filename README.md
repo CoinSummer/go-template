@@ -31,6 +31,29 @@ func main() {
 }
 ```
 
+## With config
+```go
+package main
+
+import (
+	"fmt"
+
+	gt "github.com/CoinSummer/go-template"
+)
+
+func main() {
+	tp := gt.NewTemplateWithConfig("Everyone knows {$a.b + $a.b} == { round($a.b + $a.b, 1)}", nil, &gt.TemplateConfig{
+		TimeOffset: 8,
+		TimeFormat: time.RFC3339,
+    })
+	res, err := tp.Render( `{"a": {"b": 1}}`)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(res) // Everyone knows 2 == 2
+}
+```
+
 ## Custom operator
 ```go
 package main

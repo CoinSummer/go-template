@@ -4,26 +4,45 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/sirupsen/logrus"
 	"github.com/tidwall/gjson"
 )
+
+type TemplateConfig struct {
+	TimeOffset int
+	TimeFormat string
+}
 
 type Template struct {
 	templateText   string // plain text with variables embeded
 	ctx            string // json string
 	engine         *TemplateEngine
 	parsedTemplate []IFragment
+	TemplateConfig *TemplateConfig
 }
 
 func NewTemplate(text string, engine *TemplateEngine) (*Template, error) {
+	return NewTemplateWithConfig(text, engine, nil)
+
+}
+func NewTemplateWithConfig(text string, engine *TemplateEngine, config *TemplateConfig) (*Template, error) {
 	if engine == nil {
 		engine = NewTemplateEngine()
 	}
+	if config == nil {
+		config = &TemplateConfig{
+			TimeOffset: 0,
+			TimeFormat: strings.ReplaceAll(time.RFC3339, "T", " "),
+		}
+	}
+
 	t := &Template{
-		templateText: text,
-		engine:       engine,
-		ctx:          "",
+		templateText:   text,
+		engine:         engine,
+		ctx:            "",
+		TemplateConfig: config,
 	}
 	// parse template to fragments
 	fragments, err := t.ParseFragments()
@@ -132,7 +151,7 @@ func (t *Template) Render(env string) (string, error) {
 	result := ""
 	// eval fragments to string
 	for _, f := range t.parsedTemplate {
-		res, err := f.Eval(t.ctx)
+		res, err := f.Eval(t.ctx, t.TemplateConfig)
 		if err != nil {
 			logrus.Warnf("failed eval template expression: %s", f.RawContent())
 			//result += fmt.Sprintf("** %s ** ", err)
