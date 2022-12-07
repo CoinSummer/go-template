@@ -145,13 +145,16 @@ func (t *Template) ParseFragments() ([]IFragment, error) {
 
 }
 
-func (t *Template) Render(env string) (string, error) {
+func (t *Template) RenderWithConfig(env string, config *TemplateConfig) (string, error) {
+	if config == nil {
+		config = t.TemplateConfig
+	}
 	t.ctx = env
 
 	result := ""
 	// eval fragments to string
 	for _, f := range t.parsedTemplate {
-		res, err := f.Eval(t.ctx, t.TemplateConfig)
+		res, err := f.Eval(t.ctx, config)
 		if err != nil {
 			logrus.Warnf("failed eval template expression: %s", f.RawContent())
 			//result += fmt.Sprintf("** %s ** ", err)
@@ -174,4 +177,7 @@ func (t *Template) Render(env string) (string, error) {
 	}
 
 	return result, nil
+}
+func (t *Template) Render(env string) (string, error) {
+	return t.RenderWithConfig(env, t.TemplateConfig)
 }
