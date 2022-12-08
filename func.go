@@ -71,8 +71,8 @@ func withTimezone(config *TemplateConfig, args []interface{}) (interface{}, erro
 			}
 		}
 	}
-	zonedDt := dt.In(time.FixedZone("custom", timeOffset*3600))
-	return zonedDt.Format(timeFormat), nil
+
+	return FormatTime(dt, timeOffset, timeFormat), nil
 }
 
 func NewFnMgr() *FnMgr {
