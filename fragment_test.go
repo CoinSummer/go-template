@@ -8,8 +8,6 @@ import (
 	"strings"
 	"testing"
 	"time"
-
-	"github.com/shopspring/decimal"
 )
 
 var config = &TemplateConfig{
@@ -26,10 +24,10 @@ func TestNumberLiteral(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if !res.(decimal.Decimal).Equal(decimal.NewFromInt(1)) {
-		t.Errorf("expect %v, got %v", 1, res.(decimal.Decimal))
-	}
+	data, _ := json.Marshal(res)
+	assert.Equal(t, `"1"`, string(data))
 }
+
 func TestStringDecimal(t *testing.T) {
 	got, err := NewExprFragment(`"8902239900000000000" / 1e18`, NewOperatorsMgr(), NewFnMgr())
 	if err != nil {
@@ -39,9 +37,9 @@ func TestStringDecimal(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if !res.(decimal.Decimal).Equal(decimal.NewFromFloat(8.9022399)) {
-		t.Errorf("expect %v, got %v", 2, res.(decimal.Decimal))
-	}
+
+	data, _ := json.Marshal(res)
+	assert.Equal(t, `"8.9022399"`, string(data))
 }
 
 func TestInt(t *testing.T) {
@@ -53,9 +51,8 @@ func TestInt(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if !res.(decimal.Decimal).Equal(decimal.NewFromFloat(3)) {
-		t.Errorf("expect %v, got %v", 3, res.(decimal.Decimal))
-	}
+	data, _ := json.Marshal(res)
+	assert.Equal(t, `"3"`, string(data))
 }
 
 func TestBigInt(t *testing.T) {
@@ -72,10 +69,10 @@ func TestBigInt(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if !res.(decimal.Decimal).Equal(decimal.NewFromFloat(8.9022399)) {
-		t.Errorf("expect %v, got %v", 2, res.(decimal.Decimal))
-	}
+	data, _ := json.Marshal(res)
+	assert.Equal(t, `"8.9022399"`, string(data))
 }
+
 func TestSimpleExprFragment(t *testing.T) {
 	got, err := NewExprFragment("1 + 1", NewOperatorsMgr(), NewFnMgr())
 	if err != nil {
@@ -85,9 +82,8 @@ func TestSimpleExprFragment(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if !res.(decimal.Decimal).Equal(decimal.NewFromInt(2)) {
-		t.Errorf("expect %v, got %v", 2, res.(decimal.Decimal))
-	}
+	data, _ := json.Marshal(res)
+	assert.Equal(t, `"2"`, string(data))
 }
 
 func TestAutoCastExprFragment(t *testing.T) {
@@ -99,9 +95,8 @@ func TestAutoCastExprFragment(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if !res.(decimal.Decimal).Equal(decimal.NewFromInt(3)) {
-		t.Errorf("expect %v, got %v", 3, res.(decimal.Decimal))
-	}
+	data, _ := json.Marshal(res)
+	assert.Equal(t, `"3"`, string(data))
 }
 func TestMultipleOperatorExprFragment(t *testing.T) {
 	got, err := NewExprFragment("1 + 1 + 1", NewOperatorsMgr(), NewFnMgr())
@@ -112,9 +107,8 @@ func TestMultipleOperatorExprFragment(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if !res.(decimal.Decimal).Equal(decimal.NewFromInt(3)) {
-		t.Errorf("expect %v, got %v", 3, res.(decimal.Decimal))
-	}
+	data, _ := json.Marshal(res)
+	assert.Equal(t, `"3"`, string(data))
 }
 
 func TestParOperatorExprFragment(t *testing.T) {
@@ -126,9 +120,8 @@ func TestParOperatorExprFragment(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if !res.(decimal.Decimal).Equal(decimal.NewFromInt(5)) {
-		t.Errorf("expect %v, got %v", 5, res.(decimal.Decimal))
-	}
+	data, _ := json.Marshal(res)
+	assert.Equal(t, `"5"`, string(data))
 }
 
 func TestSimpleVariableExprFragment(t *testing.T) {
@@ -140,9 +133,8 @@ func TestSimpleVariableExprFragment(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if !res.(decimal.Decimal).Equal(decimal.NewFromInt(3)) {
-		t.Errorf("expect %v, got %v", 3, res.(decimal.Decimal))
-	}
+	data, _ := json.Marshal(res)
+	assert.Equal(t, `"3"`, string(data))
 }
 
 func TestNestedVariableExprFragment(t *testing.T) {
@@ -154,9 +146,8 @@ func TestNestedVariableExprFragment(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if !res.(decimal.Decimal).Equal(decimal.NewFromInt(3)) {
-		t.Errorf("expect %v, got %v", 3, res.(decimal.Decimal))
-	}
+	data, _ := json.Marshal(res)
+	assert.Equal(t, `"3"`, string(data))
 }
 
 func TestArrayVariableExprFragment(t *testing.T) {
@@ -168,9 +159,8 @@ func TestArrayVariableExprFragment(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !res.(decimal.Decimal).Equal(decimal.NewFromInt(1)) {
-		t.Errorf("expect %v, got %v", 1, res.(decimal.Decimal))
-	}
+	data, _ := json.Marshal(res)
+	assert.Equal(t, `"1"`, string(data))
 }
 func TestInExistVariableExprFragment(t *testing.T) {
 	got, err := NewExprFragment("$a.c.d", NewOperatorsMgr(), NewFnMgr())
@@ -215,9 +205,8 @@ func TestSimpleFuncFragment(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !res.(decimal.Decimal).Equal(decimal.NewFromFloat(1.1)) {
-		t.Errorf("expect %v, got %v", 1.1, res.(decimal.Decimal))
-	}
+	data, _ := json.Marshal(res)
+	assert.Equal(t, `"1.1"`, string(data))
 }
 
 func TestTimezoneFuncFragment(t *testing.T) {
@@ -298,4 +287,22 @@ func TestTimezoneFuncCustomConfig(t *testing.T) {
 	if !(res.(string) == expectStr) {
 		t.Errorf("expect %s, got %s", expectStr, res)
 	}
+}
+func TestThousandSep(t *testing.T) {
+	got, err := NewExprFragment(`1000000000`, NewOperatorsMgr(), NewFnMgr())
+	if err != nil {
+		t.Fatal(err)
+	}
+	v, err := got.Eval(``, config)
+	s, _ := json.Marshal(v)
+	assert.Equal(t, string(s), `"1,000,000,000"`)
+}
+func TestThousandSepFloat(t *testing.T) {
+	got, err := NewExprFragment(`1000000000.12332100000`, NewOperatorsMgr(), NewFnMgr())
+	if err != nil {
+		t.Fatal(err)
+	}
+	v, err := got.Eval(``, config)
+	s, _ := json.Marshal(v)
+	assert.Equal(t, string(s), `"1,000,000,000.123321"`)
 }

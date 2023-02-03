@@ -229,5 +229,44 @@ func (f *ExprFragment) EvalContent(content string, config *TemplateConfig) (inte
 }
 func (f *ExprFragment) Eval(ctx string, config *TemplateConfig) (interface{}, error) {
 	f.Ctx = ctx
-	return f.EvalContent(f.Content, config)
+	result, err := f.EvalContent(f.Content, config)
+	if err != nil {
+		return result, err
+	}
+
+	switch r := result.(type) {
+	case string:
+		decRepr, err := decimal.NewFromString(r)
+		if err != nil {
+			return result, nil
+		}
+		return thousandSep(decRepr.String()), nil
+	case decimal.Decimal:
+		return thousandSep(r.String()), nil
+	default:
+		return result, nil
+	}
+
+}
+
+func formatIntThousandSep(num string) string {
+	var result []byte
+	for i := 0; i < len(num); i++ {
+		result = append([]byte{num[len(num)-i-1]}, result...)
+		if (i+1)%3 == 0 {
+			result = append([]byte{','}, result...)
+		}
+	}
+	return string(result)
+}
+
+func thousandSep(num string) string {
+	if strings.ContainsRune(num, '.') {
+		items := strings.Split(num, ".")
+		i := items[0]
+		f := items[1]
+		return formatIntThousandSep(i) + "." + f
+	} else {
+		return formatIntThousandSep(num)
+	}
 }
