@@ -253,7 +253,7 @@ func formatIntThousandSep(num string) string {
 	var result []byte
 	for i := 0; i < len(num); i++ {
 		result = append([]byte{num[len(num)-i-1]}, result...)
-		if (i+1)%3 == 0 {
+		if (i+1)%3 == 0 && i < len(num)-1 {
 			result = append([]byte{','}, result...)
 		}
 	}
