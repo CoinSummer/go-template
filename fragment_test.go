@@ -29,7 +29,7 @@ func TestNumberLiteral(t *testing.T) {
 }
 
 func TestStringDecimal(t *testing.T) {
-	got, err := NewExprFragment(`"8902239900000000000" / 1e18`, NewOperatorsMgr(), NewFnMgr())
+	got, err := NewExprFragment(`"8912239900000000000" / 1e18`, NewOperatorsMgr(), NewFnMgr())
 	if err != nil {
 		t.Error(err)
 	}
@@ -39,7 +39,7 @@ func TestStringDecimal(t *testing.T) {
 	}
 
 	data, _ := json.Marshal(res)
-	assert.Equal(t, `"8.9022399"`, string(data))
+	assert.Equal(t, `"8.91"`, string(data))
 }
 
 func TestInt(t *testing.T) {
@@ -60,7 +60,7 @@ func TestBigInt(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	d, _ := big.NewInt(0).SetString("8902239900000000000", 10)
+	d, _ := big.NewInt(0).SetString("8912239900000000000", 10)
 	env := map[string]interface{}{
 		"value": d,
 	}
@@ -70,7 +70,7 @@ func TestBigInt(t *testing.T) {
 		t.Error(err)
 	}
 	data, _ := json.Marshal(res)
-	assert.Equal(t, `"8.9022399"`, string(data))
+	assert.Equal(t, `"8.91"`, string(data))
 }
 
 func TestSimpleExprFragment(t *testing.T) {
@@ -304,7 +304,7 @@ func TestThousandSepFloat(t *testing.T) {
 	}
 	v, err := got.Eval(``, config)
 	s, _ := json.Marshal(v)
-	assert.Equal(t, string(s), `"1,000,000,000.123321"`)
+	assert.Equal(t, string(s), `"1,000,000,000.12"`)
 }
 func TestThousandSepFloat3(t *testing.T) {
 	got, err := NewExprFragment(`100.12332100000`, NewOperatorsMgr(), NewFnMgr())
@@ -313,5 +313,14 @@ func TestThousandSepFloat3(t *testing.T) {
 	}
 	v, err := got.Eval(``, config)
 	s, _ := json.Marshal(v)
-	assert.Equal(t, string(s), `"100.123321"`)
+	assert.Equal(t, string(s), `"100.12"`)
+}
+func TestThousandSepFloatLt1(t *testing.T) {
+	got, err := NewExprFragment(`0.0000012332100000`, NewOperatorsMgr(), NewFnMgr())
+	if err != nil {
+		t.Fatal(err)
+	}
+	v, err := got.Eval(``, config)
+	s, _ := json.Marshal(v)
+	assert.Equal(t, `"0.0000012"`, string(s))
 }

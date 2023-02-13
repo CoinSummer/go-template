@@ -240,9 +240,9 @@ func (f *ExprFragment) Eval(ctx string, config *TemplateConfig) (interface{}, er
 		if err != nil {
 			return result, nil
 		}
-		return thousandSep(decRepr.String()), nil
+		return thousandSepAndRound(decRepr), nil
 	case decimal.Decimal:
-		return thousandSep(r.String()), nil
+		return thousandSepAndRound(r), nil
 	default:
 		return result, nil
 	}
@@ -260,13 +260,37 @@ func formatIntThousandSep(num string) string {
 	return string(result)
 }
 
-func thousandSep(num string) string {
-	if strings.ContainsRune(num, '.') {
-		items := strings.Split(num, ".")
+func thousandSepAndRound(d decimal.Decimal) string {
+	// 整数部分有值
+	var num decimal.Decimal
+	if d.Abs().GreaterThanOrEqual(decimal.NewFromInt(1)) {
+		num = d.Round(2)
+	} else {
+		num = Round2(d)
+	}
+	s := num.String()
+
+	if strings.ContainsRune(s, '.') {
+		items := strings.Split(s, ".")
 		i := items[0]
 		f := items[1]
 		return formatIntThousandSep(i) + "." + f
 	} else {
-		return formatIntThousandSep(num)
+		return formatIntThousandSep(s)
 	}
+}
+
+func trunc(num decimal.Decimal, exp int, truncTo int) decimal.Decimal {
+	if num.IsZero() {
+		return num
+	}
+	if num.Abs().LessThanOrEqual(decimal.NewFromInt(1)) {
+		return trunc(num.Mul(decimal.NewFromInt(10)), exp+1, truncTo)
+	}
+	value := num
+	return value.Truncate(int32(truncTo)).Div(decimal.NewFromInt(10).Pow(decimal.NewFromInt(int64(exp))))
+
+}
+func Round2(num decimal.Decimal) decimal.Decimal {
+	return trunc(num, 0, 1)
 }
