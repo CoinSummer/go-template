@@ -74,7 +74,7 @@ func (p *ExprFragment) RawContent() string {
 	return p.Content
 }
 func ErrFMsg(format string, a ...interface{}) error {
-	logrus.Errorf(format, a...)
+	logrus.Warnf(format, a...)
 	return fmt.Errorf(format, a...)
 }
 

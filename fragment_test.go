@@ -324,3 +324,12 @@ func TestThousandSepFloatLt1(t *testing.T) {
 	s, _ := json.Marshal(v)
 	assert.Equal(t, `"0.0000012"`, string(s))
 }
+func TestThousandSepFloate18(t *testing.T) {
+	got, err := NewExprFragment(`100000/1e4`, NewOperatorsMgr(), NewFnMgr())
+	if err != nil {
+		t.Fatal(err)
+	}
+	v, err := got.Eval(``, config)
+	s, _ := json.Marshal(v)
+	assert.Equal(t, `"10"`, string(s))
+}
